@@ -4,7 +4,7 @@ const MODES = {
   enterprise: { label: 'Enterprise', guidance: 'Admin-managed deployment with user self-serve guardrails.' },
 };
 
-function getIsoDateAfterDays(days) {
+function getFutureDateString(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
@@ -32,13 +32,13 @@ const state = {
   cards: [
     {
       id: 'c1', listId: 'l1', title: 'Submit school form packet', description: 'Upload physical exam + allergy records.',
-      steps: ['Collect forms', 'Attach records', 'Submit portal'], dueDate: getIsoDateAfterDays(2), recurrence: 'None',
+      steps: ['Collect forms', 'Attach records', 'Submit portal'], dueDate: getFutureDateString(2), recurrence: 'None',
       labels: ['School', 'Admin'], priority: 'High', attachments: ['allergy-letter.pdf'], comments: ['Steward drafted checklist'],
       color: '#1f2235', hidden: false, thumbnail: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=600&q=60',
     },
     {
       id: 'c2', listId: 'l2', title: 'Negotiate internet bill', description: 'Ask for loyalty discount and remove rental fee.',
-      steps: ['Gather statements', 'Call provider', 'Confirm adjustment'], dueDate: getIsoDateAfterDays(1), recurrence: 'Monthly',
+      steps: ['Gather statements', 'Call provider', 'Confirm adjustment'], dueDate: getFutureDateString(1), recurrence: 'Monthly',
       labels: ['Finance'], priority: 'Medium', attachments: ['bill-may.pdf'], comments: ['Call window 9-11am'],
       color: '#22263c', hidden: false, thumbnail: '',
     },
@@ -431,7 +431,7 @@ function renderCalendar(boardId) {
   const month = now.getMonth();
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startOffset = mondayFirstWeekOffset(firstDay.getDay());
+  const startOffset = adjustWeekdayIndexForMondayStart(firstDay.getDay());
 
   const cells = [];
   for (let i = 0; i < startOffset; i += 1) cells.push('<div class="cal-cell"></div>');
@@ -444,7 +444,7 @@ function renderCalendar(boardId) {
   els.calendarView.innerHTML = `<h3>${now.toLocaleString('default', { month: 'long' })} ${year}</h3><div class="calendar-grid">${cells.join('')}</div>`;
 }
 
-function mondayFirstWeekOffset(dayIndex) {
+function adjustWeekdayIndexForMondayStart(dayIndex) {
   return (dayIndex + 6) % 7;
 }
 
@@ -587,7 +587,7 @@ function openCardModal(card = {}) {
   els.cardModal.showModal();
 }
 
-function splitSimpleList(value = '') {
+function splitAndTrimCommaList(value = '') {
   return value.split(',').map((v) => v.trim()).filter(Boolean);
 }
 
@@ -635,15 +635,15 @@ function saveCardFromModal(e) {
     listId: data.list,
     title: data.title,
     description: data.description,
-    steps: splitSimpleList(data.steps),
+    steps: splitAndTrimCommaList(data.steps),
     dueDate: data.dueDate,
     recurrence: data.recurrence,
     priority: data.priority,
-    labels: splitSimpleList(data.labels),
+    labels: splitAndTrimCommaList(data.labels),
     color: data.color,
     thumbnail: data.thumbnail,
-    attachments: splitSimpleList(data.attachments),
-    comments: splitSimpleList(data.comments),
+    attachments: splitAndTrimCommaList(data.attachments),
+    comments: splitAndTrimCommaList(data.comments),
     hidden: els.cardForm.elements.hidden.checked,
   };
 
@@ -662,10 +662,10 @@ function saveCardFromModal(e) {
   renderAll();
 }
 
+const escapeNode = document.createElement('span');
 function escapeHtml(v = '') {
-  const node = document.createElement('span');
-  node.textContent = String(v);
-  return node.innerHTML;
+  escapeNode.textContent = String(v);
+  return escapeNode.innerHTML;
 }
 
 function renderAll() {
@@ -701,7 +701,7 @@ function wireEvents() {
     document.body.dataset.accent = els.accentSelect.value;
   };
   els.animSpeed.onchange = () => {
-    document.body.dataset.anim = els.animSpeed.value === 'fast' ? 'fast' : '';
+    document.body.dataset.anim = els.animSpeed.value === 'fast' ? 'fast' : 'normal';
   };
 
   els.toggleCalendar.onclick = () => {
