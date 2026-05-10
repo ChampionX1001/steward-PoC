@@ -4,7 +4,7 @@ const MODES = {
   enterprise: { label: 'Enterprise', guidance: 'Admin-managed deployment with user self-serve guardrails.' },
 };
 
-function getDateAfterDays(days) {
+function getIsoDateAfterDays(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
@@ -32,13 +32,13 @@ const state = {
   cards: [
     {
       id: 'c1', listId: 'l1', title: 'Submit school form packet', description: 'Upload physical exam + allergy records.',
-      steps: ['Collect forms', 'Attach records', 'Submit portal'], dueDate: getDateAfterDays(2), recurrence: 'None',
+      steps: ['Collect forms', 'Attach records', 'Submit portal'], dueDate: getIsoDateAfterDays(2), recurrence: 'None',
       labels: ['School', 'Admin'], priority: 'High', attachments: ['allergy-letter.pdf'], comments: ['Steward drafted checklist'],
       color: '#1f2235', hidden: false, thumbnail: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=600&q=60',
     },
     {
       id: 'c2', listId: 'l2', title: 'Negotiate internet bill', description: 'Ask for loyalty discount and remove rental fee.',
-      steps: ['Gather statements', 'Call provider', 'Confirm adjustment'], dueDate: getDateAfterDays(1), recurrence: 'Monthly',
+      steps: ['Gather statements', 'Call provider', 'Confirm adjustment'], dueDate: getIsoDateAfterDays(1), recurrence: 'Monthly',
       labels: ['Finance'], priority: 'Medium', attachments: ['bill-may.pdf'], comments: ['Call window 9-11am'],
       color: '#22263c', hidden: false, thumbnail: '',
     },
@@ -161,7 +161,7 @@ function normalizeForMode() {
   if (!scopes.includes(state.currentScope)) state.currentScope = scopes[0];
 
   if (state.mode !== 'pa') {
-    state.boards = state.boards.map((b) => ({ ...b, scope: 'Steward User' }));
+    state.boards = state.boards.map((b) => ({ ...b, paScope: b.paScope || b.scope, scope: 'Steward User' }));
     if (!state.infoByScope['Steward User']) {
       const sourceInfoScope = Object.keys(state.infoByScope).find((k) => k !== 'Steward User');
       if (sourceInfoScope) state.infoByScope['Steward User'] = structuredClone(state.infoByScope[sourceInfoScope]);
@@ -174,6 +174,12 @@ function normalizeForMode() {
   }
 
   if (state.mode === 'pa') {
+    const paScopeSet = new Set(['Ava Stone', 'PA Self']);
+    state.boards = state.boards.map((b) => {
+      const restoredScope = b.paScope || b.scope;
+      const scope = paScopeSet.has(restoredScope) ? restoredScope : 'Ava Stone';
+      return { ...b, scope, paScope: scope };
+    });
     if (!state.boards.some((b) => b.scope === 'PA Self')) {
       state.boards.push({ id: generateId('b'), name: 'PA Ops', scope: 'PA Self', color: '#ff8e66', linkedBoards: [] });
     }
@@ -425,7 +431,7 @@ function renderCalendar(boardId) {
   const month = now.getMonth();
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startOffset = (firstDay.getDay() + 6) % 7;
+  const startOffset = mondayFirstWeekOffset(firstDay.getDay());
 
   const cells = [];
   for (let i = 0; i < startOffset; i += 1) cells.push('<div class="cal-cell"></div>');
@@ -436,6 +442,10 @@ function renderCalendar(boardId) {
   }
 
   els.calendarView.innerHTML = `<h3>${now.toLocaleString('default', { month: 'long' })} ${year}</h3><div class="calendar-grid">${cells.join('')}</div>`;
+}
+
+function mondayFirstWeekOffset(dayIndex) {
+  return (dayIndex + 6) % 7;
 }
 
 function renderInformation() {
@@ -577,7 +587,7 @@ function openCardModal(card = {}) {
   els.cardModal.showModal();
 }
 
-function splitCsv(value = '') {
+function splitSimpleList(value = '') {
   return value.split(',').map((v) => v.trim()).filter(Boolean);
 }
 
@@ -625,15 +635,15 @@ function saveCardFromModal(e) {
     listId: data.list,
     title: data.title,
     description: data.description,
-    steps: splitCsv(data.steps),
+    steps: splitSimpleList(data.steps),
     dueDate: data.dueDate,
     recurrence: data.recurrence,
     priority: data.priority,
-    labels: splitCsv(data.labels),
+    labels: splitSimpleList(data.labels),
     color: data.color,
     thumbnail: data.thumbnail,
-    attachments: splitCsv(data.attachments),
-    comments: splitCsv(data.comments),
+    attachments: splitSimpleList(data.attachments),
+    comments: splitSimpleList(data.comments),
     hidden: els.cardForm.elements.hidden.checked,
   };
 

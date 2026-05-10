@@ -27,6 +27,7 @@ body[data-theme="light"] {
 body[data-accent="mint"] { --accent: #31d1b6; }
 body[data-accent="sunset"] { --accent: #ff8e66; }
 body[data-anim="fast"] { --anim: 100ms; }
+body[data-anim="normal"] { --anim: 180ms; }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
