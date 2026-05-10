@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Steward — Life OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-theme="dark" data-accent="violet">
+    <div class="app-shell">
+      <aside class="sidebar glass">
+        <div class="brand">
+          <div class="brand-dot"></div>
+          <div>
+            <h1>Steward</h1>
+            <p>Life OS</p>
+          </div>
+        </div>
+        <nav id="main-tabs" class="tab-list">
+          <button class="tab active" data-tab="board">Task Board</button>
+          <button class="tab" data-tab="information">Information</button>
+          <button class="tab" data-tab="drive">Drive</button>
+          <button class="tab" data-tab="chat">Chat Hub</button>
+          <button class="tab" data-tab="settings">Settings</button>
+        </nav>
+        <div class="sidebar-foot">
+          <p class="muted" id="mode-chip">PA-mediated mode</p>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="topbar glass">
+          <div>
+            <h2 id="tab-title">Task Board</h2>
+            <p class="muted" id="mode-guidance"></p>
+          </div>
+          <div class="inline-actions" id="scope-container"></div>
+        </section>
+
+        <section id="tab-board" class="panel active">
+          <div class="panel-head glass">
+            <div class="inline-actions wrap" id="board-controls"></div>
+            <div class="inline-actions">
+              <button id="toggle-calendar" class="btn subtle">Calendar view</button>
+              <button id="add-list" class="btn">+ List</button>
+              <button id="add-card" class="btn">+ Card</button>
+            </div>
+          </div>
+
+          <div id="board-linking" class="notice glass hidden"></div>
+
+          <div id="calendar-view" class="calendar hidden glass"></div>
+          <div id="board-view" class="board"></div>
+        </section>
+
+        <section id="tab-information" class="panel">
+          <div id="info-layout" class="info-grid"></div>
+        </section>
+
+        <section id="tab-drive" class="panel">
+          <div class="panel-head glass">
+            <div class="inline-actions">
+              <button id="add-folder" class="btn">+ Folder</button>
+              <label class="btn subtle file-label">
+                Upload file
+                <input id="upload-file" type="file" hidden />
+              </label>
+            </div>
+            <p class="muted">Task attachments auto-sync to Drive</p>
+          </div>
+          <div class="drive-layout">
+            <div class="glass file-tree" id="file-tree"></div>
+            <div class="glass file-detail" id="file-detail"></div>
+          </div>
+        </section>
+
+        <section id="tab-chat" class="panel">
+          <div class="chat-layout">
+            <div class="glass chat-sidebar">
+              <div class="inline-actions between">
+                <h3>Conversations</h3>
+                <button id="new-chat" class="btn">+ New</button>
+              </div>
+              <div id="chat-list"></div>
+            </div>
+            <div class="glass chat-main">
+              <div class="chat-head">
+                <div>
+                  <h3 id="chat-title">No chat selected</h3>
+                  <p class="muted" id="chat-context-note"></p>
+                </div>
+                <label class="toggle">
+                  <input id="incognito-toggle" type="checkbox" />
+                  <span>Incognito</span>
+                </label>
+              </div>
+              <div id="chat-messages" class="chat-messages"></div>
+              <div class="chat-input-wrap">
+                <textarea id="chat-input" rows="3" placeholder="Ask Steward to take action..."></textarea>
+                <button id="send-chat" class="btn">Send</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="tab-settings" class="panel">
+          <div class="settings-grid">
+            <article class="glass card">
+              <h3>Mode</h3>
+              <p class="muted">Choose operating mode for this demo.</p>
+              <select id="mode-select"></select>
+            </article>
+            <article class="glass card">
+              <h3>Appearance</h3>
+              <div class="setting-row">
+                <span>Theme</span>
+                <button id="theme-toggle" class="btn subtle">Toggle dark/light</button>
+              </div>
+              <div class="setting-row">
+                <span>Accent</span>
+                <select id="accent-select">
+                  <option value="violet">Violet</option>
+                  <option value="mint">Mint</option>
+                  <option value="sunset">Sunset</option>
+                </select>
+              </div>
+            </article>
+            <article class="glass card">
+              <h3>Controls</h3>
+              <div class="setting-row">
+                <span>Animation speed</span>
+                <select id="animation-speed">
+                  <option value="normal">Normal</option>
+                  <option value="fast">Fast</option>
+                </select>
+              </div>
+              <div class="setting-row">
+                <span>Action approvals</span>
+                <select>
+                  <option>1-tap approve</option>
+                  <option>Always ask</option>
+                  <option>Autonomous where allowed</option>
+                </select>
+              </div>
+            </article>
+            <article class="glass card">
+              <h3>Security</h3>
+              <ul class="muted tiny-list">
+                <li>On-device vault indicator</li>
+                <li>Attorney-client grade encryption flag</li>
+                <li>Immutable action audit log toggle</li>
+              </ul>
+              <button class="btn subtle">Open audit log</button>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="card-modal" class="glass">
+      <form method="dialog" id="card-form">
+        <h3>Task details</h3>
+        <div class="two-col">
+          <label>Title <input name="title" required /></label>
+          <label>List <select name="list"></select></label>
+        </div>
+        <label>Description <textarea name="description" rows="2"></textarea></label>
+        <label>Steps (comma-separated) <input name="steps" /></label>
+        <div class="three-col">
+          <label>Date <input name="dueDate" type="date" /></label>
+          <label>Recurring
+            <select name="recurrence">
+              <option>None</option>
+              <option>Daily</option>
+              <option>Weekly</option>
+              <option>Monthly</option>
+            </select>
+          </label>
+          <label>Priority
+            <select name="priority">
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+              <option>Critical</option>
+            </select>
+          </label>
+        </div>
+        <div class="three-col">
+          <label>Labels (comma-separated) <input name="labels" /></label>
+          <label>Card color <input name="color" type="color" value="#1f2235" /></label>
+          <label>Thumbnail URL <input name="thumbnail" placeholder="https://" /></label>
+        </div>
+        <label>Attachments (comma-separated filenames) <input name="attachments" /></label>
+        <label>Comments (comma-separated) <input name="comments" /></label>
+        <label class="check-row"><input name="hidden" type="checkbox" /> Invisible to Steward</label>
+        <div class="inline-actions end">
+          <button class="btn subtle" value="cancel">Cancel</button>
+          <button class="btn" id="save-card" value="default">Save task</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="input-modal" class="glass">
+      <form method="dialog" id="input-form">
+        <h3 id="input-title">Add item</h3>
+        <label id="input-label">Value <input id="input-value" required /></label>
+        <div class="inline-actions end">
+          <button class="btn subtle" value="cancel">Cancel</button>
+          <button class="btn" value="default">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="confirm-modal" class="glass">
+      <form method="dialog" id="confirm-form">
+        <h3 id="confirm-title">Confirm action</h3>
+        <p id="confirm-message" class="muted"></p>
+        <div class="inline-actions end">
+          <button class="btn subtle" value="cancel">Cancel</button>
+          <button class="btn" value="default">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
