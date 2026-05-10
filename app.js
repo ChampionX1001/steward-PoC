@@ -120,6 +120,11 @@ const els = {
   incognitoToggle: document.getElementById('incognito-toggle'),
   cardModal: document.getElementById('card-modal'),
   cardForm: document.getElementById('card-form'),
+  inputModal: document.getElementById('input-modal'),
+  inputForm: document.getElementById('input-form'),
+  inputTitle: document.getElementById('input-title'),
+  inputLabel: document.getElementById('input-label'),
+  inputValue: document.getElementById('input-value'),
 };
 
 function uid(prefix) {
@@ -153,12 +158,14 @@ function normalizeForMode() {
 
   if (state.mode !== 'pa') {
     state.boards = state.boards.map((b) => ({ ...b, scope: 'Steward User' }));
-    Object.keys(state.infoByScope).forEach((k) => {
-      if (k !== 'Steward User') state.infoByScope['Steward User'] = state.infoByScope[k];
-    });
-    Object.keys(state.filesByScope).forEach((k) => {
-      if (k !== 'Steward User') state.filesByScope['Steward User'] = state.filesByScope[k];
-    });
+    if (!state.infoByScope['Steward User']) {
+      const sourceInfoScope = Object.keys(state.infoByScope).find((k) => k !== 'Steward User');
+      if (sourceInfoScope) state.infoByScope['Steward User'] = structuredClone(state.infoByScope[sourceInfoScope]);
+    }
+    if (!state.filesByScope['Steward User']) {
+      const sourceFileScope = Object.keys(state.filesByScope).find((k) => k !== 'Steward User');
+      if (sourceFileScope) state.filesByScope['Steward User'] = structuredClone(state.filesByScope[sourceFileScope]);
+    }
     state.chats = state.chats.map((c) => ({ ...c, scope: 'Steward User' }));
   }
 
@@ -251,8 +258,8 @@ function renderBoardControls() {
   const addBoard = document.createElement('button');
   addBoard.className = 'btn';
   addBoard.textContent = '+ Board';
-  addBoard.onclick = () => {
-    const name = prompt('Board name?');
+  addBoard.onclick = async () => {
+    const name = await askInput('New board', 'Board name');
     if (!name) return;
     const scope = state.mode === 'pa' ? state.currentScope : 'Steward User';
     const newBoard = { id: uid('b'), name, scope, color: '#8f7bff', linkedBoards: [] };
@@ -443,9 +450,9 @@ function renderInformation() {
   }).join('');
 
   els.infoLayout.querySelectorAll('[data-add-info]').forEach((btn) => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const key = btn.dataset.addInfo;
-      const entry = prompt(`Add ${key} info`);
+      const entry = await askInput(`Add ${key} info`, 'Value');
       if (!entry) return;
       if (!state.infoByScope[state.currentScope]) state.infoByScope[state.currentScope] = {};
       if (!state.infoByScope[state.currentScope][key]) state.infoByScope[state.currentScope][key] = [];
@@ -568,6 +575,22 @@ function splitCsv(value = '') {
   return value.split(',').map((v) => v.trim()).filter(Boolean);
 }
 
+function askInput(title, label) {
+  return new Promise((resolve) => {
+    els.inputTitle.textContent = title;
+    els.inputLabel.firstChild.textContent = `${label} `;
+    els.inputValue.value = '';
+    const onClose = () => {
+      els.inputModal.removeEventListener('close', onClose);
+      const ok = els.inputModal.returnValue !== 'cancel';
+      resolve(ok ? els.inputValue.value.trim() : '');
+    };
+    els.inputModal.addEventListener('close', onClose);
+    els.inputModal.showModal();
+    els.inputValue.focus();
+  });
+}
+
 function saveCardFromModal(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(els.cardForm).entries());
@@ -604,12 +627,9 @@ function saveCardFromModal(e) {
 }
 
 function escapeHtml(v = '') {
-  return v
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  const node = document.createElement('span');
+  node.textContent = String(v);
+  return node.innerHTML;
 }
 
 function renderAll() {
@@ -654,8 +674,8 @@ function wireEvents() {
     renderBoard();
   };
 
-  els.addList.onclick = () => {
-    const title = prompt('List name?');
+  els.addList.onclick = async () => {
+    const title = await askInput('New list', 'List name');
     if (!title) return;
     state.lists.push({ id: uid('l'), boardId: activeBoard().id, title, color: '#1f2235' });
     renderBoard();
@@ -664,8 +684,8 @@ function wireEvents() {
   els.addCard.onclick = () => openCardModal({ listId: listsForBoard(activeBoard().id)[0]?.id });
   els.cardForm.addEventListener('submit', saveCardFromModal);
 
-  els.addFolder.onclick = () => {
-    const folder = prompt('New folder name?');
+  els.addFolder.onclick = async () => {
+    const folder = await askInput('New folder', 'Folder name');
     if (!folder) return;
     const files = state.filesByScope[state.currentScope] || (state.filesByScope[state.currentScope] = []);
     files.push({ id: uid('f'), name: 'placeholder.txt', folder, comments: ['Created folder placeholder'] });
@@ -681,8 +701,8 @@ function wireEvents() {
     renderDrive();
   };
 
-  els.newChat.onclick = () => {
-    const name = prompt('Chat name?') || 'New chat';
+  els.newChat.onclick = async () => {
+    const name = (await askInput('New chat', 'Chat name')) || 'New chat';
     const c = { id: uid('ch'), name, scope: state.currentScope, incognito: false, messages: [] };
     state.chats.unshift(c);
     state.selectedChatId = c.id;
