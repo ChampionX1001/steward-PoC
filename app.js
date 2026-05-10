@@ -4,7 +4,7 @@ const MODES = {
   enterprise: { label: 'Enterprise', guidance: 'Admin-managed deployment with user self-serve guardrails.' },
 };
 
-function dateAfter(days) {
+function getDateAfterDays(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
@@ -32,13 +32,13 @@ const state = {
   cards: [
     {
       id: 'c1', listId: 'l1', title: 'Submit school form packet', description: 'Upload physical exam + allergy records.',
-      steps: ['Collect forms', 'Attach records', 'Submit portal'], dueDate: dateAfter(2), recurrence: 'None',
+      steps: ['Collect forms', 'Attach records', 'Submit portal'], dueDate: getDateAfterDays(2), recurrence: 'None',
       labels: ['School', 'Admin'], priority: 'High', attachments: ['allergy-letter.pdf'], comments: ['Steward drafted checklist'],
       color: '#1f2235', hidden: false, thumbnail: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=600&q=60',
     },
     {
       id: 'c2', listId: 'l2', title: 'Negotiate internet bill', description: 'Ask for loyalty discount and remove rental fee.',
-      steps: ['Gather statements', 'Call provider', 'Confirm adjustment'], dueDate: dateAfter(1), recurrence: 'Monthly',
+      steps: ['Gather statements', 'Call provider', 'Confirm adjustment'], dueDate: getDateAfterDays(1), recurrence: 'Monthly',
       labels: ['Finance'], priority: 'Medium', attachments: ['bill-may.pdf'], comments: ['Call window 9-11am'],
       color: '#22263c', hidden: false, thumbnail: '',
     },
@@ -127,7 +127,7 @@ const els = {
   inputValue: document.getElementById('input-value'),
 };
 
-function uid(prefix) {
+function generateId(prefix) {
   return `${prefix}${Math.random().toString(16).slice(2, 8)}`;
 }
 
@@ -171,7 +171,7 @@ function normalizeForMode() {
 
   if (state.mode === 'pa') {
     if (!state.boards.some((b) => b.scope === 'PA Self')) {
-      state.boards.push({ id: uid('b'), name: 'PA Ops', scope: 'PA Self', color: '#ff8e66', linkedBoards: [] });
+      state.boards.push({ id: generateId('b'), name: 'PA Ops', scope: 'PA Self', color: '#ff8e66', linkedBoards: [] });
     }
     if (!state.infoByScope['Ava Stone']) state.infoByScope['Ava Stone'] = structuredClone(state.infoByScope['Steward User'] || {});
     if (!state.infoByScope['PA Self']) state.infoByScope['PA Self'] = { profile: ['Assistant profile'], health: [], finance: [], family: [], subscriptions: [], media: [], additional: [] };
@@ -232,7 +232,7 @@ function renderMode() {
 function renderBoardControls() {
   const boardOptions = state.boards.filter((b) => state.mode !== 'pa' || b.scope === state.currentScope);
   if (!boardOptions.length) {
-    const b = { id: uid('b'), name: `${state.currentScope} Board`, scope: state.currentScope, color: '#8f7bff', linkedBoards: [] };
+    const b = { id: generateId('b'), name: `${state.currentScope} Board`, scope: state.currentScope, color: '#8f7bff', linkedBoards: [] };
     state.boards.push(b);
     state.selectedBoardId = b.id;
   }
@@ -262,10 +262,10 @@ function renderBoardControls() {
     const name = await askInput('New board', 'Board name');
     if (!name) return;
     const scope = state.mode === 'pa' ? state.currentScope : 'Steward User';
-    const newBoard = { id: uid('b'), name, scope, color: '#8f7bff', linkedBoards: [] };
+    const newBoard = { id: generateId('b'), name, scope, color: '#8f7bff', linkedBoards: [] };
     state.boards.push(newBoard);
     state.selectedBoardId = newBoard.id;
-    state.lists.push({ id: uid('l'), boardId: newBoard.id, title: 'Inbox', color: '#1f2235' });
+    state.lists.push({ id: generateId('l'), boardId: newBoard.id, title: 'Inbox', color: '#1f2235' });
     renderAll();
   };
 
@@ -336,7 +336,7 @@ function cardTemplate(card) {
 function renderBoard() {
   const board = activeBoard();
   const lists = listsForBoard(board.id);
-  if (!lists.length) state.lists.push({ id: uid('l'), boardId: board.id, title: 'Inbox', color: '#1f2235' });
+  if (!lists.length) state.lists.push({ id: generateId('l'), boardId: board.id, title: 'Inbox', color: '#1f2235' });
 
   if (state.calendar) {
     renderCalendar(board.id);
@@ -595,7 +595,7 @@ function saveCardFromModal(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(els.cardForm).entries());
   const model = {
-    id: els.cardForm.dataset.cardId || uid('c'),
+    id: els.cardForm.dataset.cardId || generateId('c'),
     listId: data.list,
     title: data.title,
     description: data.description,
@@ -618,7 +618,7 @@ function saveCardFromModal(e) {
   const fileBucket = state.filesByScope[state.currentScope] || (state.filesByScope[state.currentScope] = []);
   model.attachments.forEach((name) => {
     if (!fileBucket.some((f) => f.name === name)) {
-      fileBucket.push({ id: uid('f'), name, folder: 'Task Attachments', comments: [`Added from task: ${model.title}`] });
+      fileBucket.push({ id: generateId('f'), name, folder: 'Task Attachments', comments: [`Added from task: ${model.title}`] });
     }
   });
 
@@ -677,7 +677,7 @@ function wireEvents() {
   els.addList.onclick = async () => {
     const title = await askInput('New list', 'List name');
     if (!title) return;
-    state.lists.push({ id: uid('l'), boardId: activeBoard().id, title, color: '#1f2235' });
+    state.lists.push({ id: generateId('l'), boardId: activeBoard().id, title, color: '#1f2235' });
     renderBoard();
   };
 
@@ -688,7 +688,7 @@ function wireEvents() {
     const folder = await askInput('New folder', 'Folder name');
     if (!folder) return;
     const files = state.filesByScope[state.currentScope] || (state.filesByScope[state.currentScope] = []);
-    files.push({ id: uid('f'), name: 'placeholder.txt', folder, comments: ['Created folder placeholder'] });
+    files.push({ id: generateId('f'), name: 'placeholder.txt', folder, comments: ['Created folder placeholder'] });
     renderDrive();
   };
 
@@ -696,14 +696,14 @@ function wireEvents() {
     const file = els.uploadFile.files?.[0];
     if (!file) return;
     const files = state.filesByScope[state.currentScope] || (state.filesByScope[state.currentScope] = []);
-    files.push({ id: uid('f'), name: file.name, folder: 'Uploads', comments: ['Uploaded by user'] });
+    files.push({ id: generateId('f'), name: file.name, folder: 'Uploads', comments: ['Uploaded by user'] });
     els.uploadFile.value = '';
     renderDrive();
   };
 
   els.newChat.onclick = async () => {
     const name = (await askInput('New chat', 'Chat name')) || 'New chat';
-    const c = { id: uid('ch'), name, scope: state.currentScope, incognito: false, messages: [] };
+    const c = { id: generateId('ch'), name, scope: state.currentScope, incognito: false, messages: [] };
     state.chats.unshift(c);
     state.selectedChatId = c.id;
     renderChat();
