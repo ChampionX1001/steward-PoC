@@ -125,6 +125,10 @@ const els = {
   inputTitle: document.getElementById('input-title'),
   inputLabel: document.getElementById('input-label'),
   inputValue: document.getElementById('input-value'),
+  confirmModal: document.getElementById('confirm-modal'),
+  confirmForm: document.getElementById('confirm-form'),
+  confirmTitle: document.getElementById('confirm-title'),
+  confirmMessage: document.getElementById('confirm-message'),
 };
 
 function generateId(prefix) {
@@ -283,7 +287,7 @@ function renderBoardControls() {
     if (!target) return;
     const thisBoard = activeBoard();
     if (state.mode === 'pa' && state.boards.find((b) => b.id === target)?.scope !== thisBoard.scope) {
-      alert('In PA mode, board memory links cannot cross client boundaries.');
+      flashNotice('In PA mode, board memory links cannot cross client boundaries.');
       return;
     }
     if (!thisBoard.linkedBoards.includes(target)) thisBoard.linkedBoards.push(target);
@@ -293,9 +297,11 @@ function renderBoardControls() {
   const delBoard = document.createElement('button');
   delBoard.className = 'btn subtle';
   delBoard.textContent = 'Delete board';
-  delBoard.onclick = () => {
+  delBoard.onclick = async () => {
     const thisBoard = activeBoard();
-    if (!thisBoard || !confirm(`Delete board: ${thisBoard.name}?`)) return;
+    if (!thisBoard) return;
+    const shouldDelete = await askConfirm('Delete board', `Delete board: ${thisBoard.name}?`);
+    if (!shouldDelete) return;
     state.boards = state.boards.filter((b) => b.id !== thisBoard.id);
     state.lists = state.lists.filter((l) => l.boardId !== thisBoard.id);
     const validListIds = new Set(state.lists.map((l) => l.id));
@@ -589,6 +595,26 @@ function askInput(title, label) {
     els.inputModal.showModal();
     els.inputValue.focus();
   });
+}
+
+function askConfirm(title, message) {
+  return new Promise((resolve) => {
+    els.confirmTitle.textContent = title;
+    els.confirmMessage.textContent = message;
+    const onClose = () => {
+      els.confirmModal.removeEventListener('close', onClose);
+      resolve(els.confirmModal.returnValue !== 'cancel');
+    };
+    els.confirmModal.addEventListener('close', onClose);
+    els.confirmModal.showModal();
+  });
+}
+
+function flashNotice(message) {
+  els.boardLinking.textContent = message;
+  els.boardLinking.classList.remove('hidden');
+  clearTimeout(flashNotice.timeoutId);
+  flashNotice.timeoutId = setTimeout(() => renderBoardControls(), 2200);
 }
 
 function saveCardFromModal(e) {
